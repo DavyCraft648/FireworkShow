@@ -1,0 +1,37 @@
+configVersion: FireworkShow v0.0.1
+spawnTick: 40
+worldName: world
+positionCount: 8
+
+pos1:
+  x: -12
+  y: 87
+  z: 29
+pos2:
+  x: -29
+  y: 87
+  z: -12
+pos3:
+  x: 12
+  y: 87
+  z: -29
+pos4:
+  x: 29
+  y: 87
+  z: 12
+pos5:
+  x: 12
+  y: 87
+  z: 29
+pos6:
+  x: -29
+  y: 87
+  z: 12
+pos7:
+  x: -12
+  y: 87
+  z: -29
+pos8:
+  x: 29
+  y: 87
+  z: -12
