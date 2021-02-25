@@ -10,7 +10,7 @@ class FireworkSpawnTask extends Task
 {
 	public function onRun(int $currentTick)
 	{
-		if (!is_null(Server::getInstance()->getLevelByName(FireworkShow::$world)->getPlayers())) {
+		if (count(Server::getInstance()->getLevelByName(FireworkShow::$world)->getPlayers()) >= 1) {
 			foreach (FireworkShow::$positions as $pos) {
 				FireworkShow::spawnFirework($pos);
 			}
