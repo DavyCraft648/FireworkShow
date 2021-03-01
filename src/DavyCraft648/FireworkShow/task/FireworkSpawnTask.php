@@ -13,7 +13,7 @@ class FireworkSpawnTask extends Task
 	{
 		$level = Server::getInstance()->getLevelByName(FireworkShow::$world);
 		if (FireworkShow::$nightOnly and !(FireworkShow::isNight($level))) return;
-		if (!is_null(count($level->getPlayers()))) {
+		if (count($level->getPlayers()) >= 1) {
 			foreach (FireworkShow::$positions as $pos) {
 				FireworkShow::spawnFirework($pos);
 			}
