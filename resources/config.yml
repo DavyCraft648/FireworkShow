@@ -1,8 +1,32 @@
-configVersion: FireworkShow v0.0.1
+# FireworkShow plugin configuration file
+
+#---------------------------------
+# Do not change this
+configVersion: FireworkShow v0.0.3
+#---------------------------------
+
+# Firework spawn delay in ticks (1 sec = 20 ticks)
+#spawnTick: 40
 spawnTick: 40
+
+# The world name to spawn fireworks
+#worldName: world
 worldName: world
+
+# Firework only spawn at night: true|false
+#nightOnly: true
+nightOnly: false
+
+# Total positions
+#positionCount: 8
 positionCount: 8
 
+# Positions
+#
+#pos1:    | 1   = Ordinal number
+#  x: -12 | -12 = x position
+#  y: 87  | 87  = y position
+#  z: 29  | 29  = z position
 pos1:
   x: -12
   y: 87

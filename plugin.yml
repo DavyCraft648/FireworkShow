@@ -1,8 +1,9 @@
 name: FireworkShow
 main: DavyCraft648\FireworkShow\FireworkShow
-version: 0.0.1
-api: 3.0.0
+version: 0.0.3
+api: 3.14.0
 author: DavyCraft648
 description: Add a fireworks show to your PocketMine server
 website: https://github.com/DavyCraft648/FireworkShow
 load: POSTWORLD
+mcpe-protocol: [407, 408, 419, 422]

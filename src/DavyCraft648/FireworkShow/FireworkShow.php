@@ -9,14 +9,16 @@ use Exception;
 use pocketmine\entity\Entity;
 use pocketmine\item\Item;
 use pocketmine\item\ItemFactory;
+use pocketmine\level\Level;
 use pocketmine\math\Vector3;
 use pocketmine\plugin\PluginBase;
 use pocketmine\Server;
 
 class FireworkShow extends PluginBase
 {
-	public static string $world;
+	public static bool $nightOnly = false;
 	public static array $positions = [];
+	public static string $world;
 	private bool $enabled = true;
 
 	public function onEnable()
@@ -45,7 +47,9 @@ class FireworkShow extends PluginBase
 			$this->enabled = false;
 		}
 
-		if ($this->getServer()->getLevelByName((string)$config->get("worldName")) != null) {
+		self::$nightOnly = (bool)$config->get("nightOnly", false);
+
+		if (!is_null($this->getServer()->getLevelByName((string)$config->get("worldName")))) {
 			self::$world = (string)$config->get("worldName");
 			$this->getScheduler()->scheduleRepeatingTask(new FireworkSpawnTask(), (int)$config->get("spawnTick"));
 		} else {
@@ -61,7 +65,9 @@ class FireworkShow extends PluginBase
 	public static function spawnFirework(Vector3 $pos)
 	{
 		$level = Server::getInstance()->getLevelByName(self::$world);
-		if ($level->isChunkLoaded($pos->getFloorX(), $pos->getFloorZ())) {
+		$chunkX = $pos->getFloorX() >> 4;
+		$chunkY = $pos->getFloorZ() >> 4;
+		if ($level->isChunkLoaded($chunkX, $chunkY)) {
 			/** @var Fireworks $item */
 			$item = ItemFactory::get(Item::FIREWORKS);
 			$item->addExplosion(mt_rand(0, 4), self::getFireworksColor(), "", (bool)mt_rand(0, 1), (bool)mt_rand(0, 1));
@@ -71,6 +77,11 @@ class FireworkShow extends PluginBase
 			$entity = Entity::createEntity("FireworksRocket", $level, $nbt, $item);
 			$entity->spawnToAll();
 		}
+	}
+
+	public static function isNight($level)
+	{
+		return $level->getTime() >= Level::TIME_NIGHT and $level->getTime() <= Level::TIME_SUNRISE;
 	}
 
 	private static function getFireworksColor(): string

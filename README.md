@@ -1,5 +1,5 @@
-# FireworkShow
-Do you need something special to your server for a new year?  Fireworks maybe?
+# <img src="https://github.com/DavyCraft648/FireworkShow/blob/main/icon.png" height="64" width="64"></img> FireworkShow
+Do you need something special to your server for a new year or at night?  Fireworks maybe?
 
 This plugin will add a firework show to your server!
 
@@ -9,8 +9,11 @@ This plugin will add a firework show to your server!
  
 ### Config
 ```yaml
+# FireworkShow plugin configuration file
+
+#---------------------------------
 # Do not change this
-configVersion: FireworkShow v0.0.1
+configVersion: FireworkShow v0.0.3
 #---------------------------------
 
 # Firework spawn delay in ticks (1 sec = 20 ticks)
@@ -21,12 +24,16 @@ spawnTick: 40
 #worldName: world
 worldName: world
 
+# Firework only spawn at night: true|false
+#nightOnly: true
+nightOnly: false
+
 # Total positions
-#positionCount: 8 
+#positionCount: 8
 positionCount: 8
 
 # Positions
-# 
+#
 #pos1:    | 1   = Ordinal number
 #  x: -12 | -12 = x position
 #  y: 87  | 87  = y position
