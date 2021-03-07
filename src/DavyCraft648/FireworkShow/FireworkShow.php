@@ -16,10 +16,14 @@ use pocketmine\Server;
 
 class FireworkShow extends PluginBase
 {
-	public static bool $nightOnly = false;
-	public static array $positions = [];
-	public static string $world;
-	private bool $enabled = true;
+	/** @var bool */
+	public static $nightOnly = false;
+	/** @var array */
+	public static $positions = [];
+	/** @var string */
+	public static $world;
+	/** @var bool */
+	private $enabled = true;
 
 	public function onEnable()
 	{
@@ -31,7 +35,7 @@ class FireworkShow extends PluginBase
 				Item::initCreativeItems();
 				Entity::registerEntity(FireworksRocket::class, false, ["FireworksRocket"]);
 			} catch (Exception $e) {
-				$this->getLogger()->alert("Error: {$e->getMessage()}");
+				$this->getLogger()->critical("Error: {$e->getMessage()}");
 				$plMgr->disablePlugin($this);
 			}
 		} else $plMgr->disablePlugin($this);

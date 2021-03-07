@@ -16,7 +16,7 @@ class FireworksRocket extends Entity{
 	public $height = 0.25;
 
 	/** @var int */
-	protected int $lifeTime = 0;
+	protected $lifeTime = 0;
 
 	public function __construct(Level $level, CompoundTag $nbt, ?Fireworks $fireworks = null){
 		parent::__construct($level, $nbt);

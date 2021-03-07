@@ -3,7 +3,6 @@
 namespace DavyCraft648\FireworkShow\task;
 
 use DavyCraft648\FireworkShow\FireworkShow;
-use pocketmine\level\Level;
 use pocketmine\scheduler\Task;
 use pocketmine\Server;
 
