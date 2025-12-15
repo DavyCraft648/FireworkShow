@@ -2,60 +2,67 @@
 
 #---------------------------------
 # Do not change this
-configVersion: FireworkShow v0.0.3
+configVersion: 1
 #---------------------------------
 
-# Firework spawn delay in ticks (1 sec = 20 ticks)
-#spawnTick: 40
-spawnTick: 40
+# Command configuration
+# Allows changing the command name, description, usage and aliases without editing plugin code.
+# Aliases should be a list (e.g. [fwshow, fws]).
+command:
+  name: fireworkshow
+  description: "Manage firework shows"
+  usage: "/fireworkshow"
+  aliases: [fwshow, fws]
 
-# The world name to spawn fireworks
-#worldName: world
-worldName: world
+# Positions list - each entry can override worldName, nightOnly, enabled, spawnTick
+# spawnTick is in ticks (20 ticks = ~1 second)
+# explosions is optional and is a user-friendly list. Fields:
+#   type: name or integer (e.g. SMALL_BALL or 0)
+#     possible names: SMALL_BALL, LARGE_BALL, STAR, CREEPER, BURST (case-insensitive)
+#   colors: array of dye color names or ids (strings like RED, BLUE or integers)
+#   fade: optional array of dye color names or ids for fade
+#   twinkle: optional boolean
+#   trail: optional boolean
+# Example:
+# positions:
+#   - worldName: world
+#     x: -12
+#     y: 87
+#     z: 29
+#     enabled: true
+#     nightOnly: false
+#     spawnTick: 40
+#     explosions:
+#       - type: SMALL_BALL
+#         colors: [RED, BLUE]
+#         fade: [YELLOW]
+#         twinkle: false
+#         trail: true
+#   - worldName: world_nether
+#     x: 10
+#     y: 80
+#     z: -5
+#     enabled: false
 
-# Firework only spawn at night: true|false
-#nightOnly: true
-nightOnly: false
+positions:
+  - worldName: world
+    x: -12
+    y: 87
+    z: 29
+    enabled: true
+    nightOnly: false
+    spawnTick: 40
+    explosions:
+      - type: SMALL_BALL
+        colors: [RED, BLUE]
+        fade: [YELLOW]
+        twinkle: false
+        trail: true
 
-# Total positions
-#positionCount: 8
-positionCount: 8
-
-# Positions
-#
-#pos1:    | 1   = Ordinal number
-#  x: -12 | -12 = x position
-#  y: 87  | 87  = y position
-#  z: 29  | 29  = z position
-pos1:
-  x: -12
-  y: 87
-  z: 29
-pos2:
-  x: -29
-  y: 87
-  z: -12
-pos3:
-  x: 12
-  y: 87
-  z: -29
-pos4:
-  x: 29
-  y: 87
-  z: 12
-pos5:
-  x: 12
-  y: 87
-  z: 29
-pos6:
-  x: -29
-  y: 87
-  z: 12
-pos7:
-  x: -12
-  y: 87
-  z: -29
-pos8:
-  x: 29
-  y: 87
-  z: -12
+  - worldName: world_nether
+    x: 10
+    y: 80
+    z: -5
+    enabled: true
+    nightOnly: true
+    spawnTick: 60
