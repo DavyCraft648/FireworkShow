@@ -119,6 +119,7 @@ final class FireworkShow extends PluginBase{
 			$enabled = (bool) ($entry['enabled'] ?? true);
 			$nightOnly = (bool) ($entry['nightOnly'] ?? false);
 			$spawnTick = (int) ($entry['spawnTick'] ?? $config->get("spawnTick", 40));
+			$flight = (int) ($entry['flightTimeMultiplier'] ?? $config->get("flightTimeMultiplier", 1));
 
 			$explosions = [];
 			$rawExplosions = is_array($entry['explosions'] ?? null) ? $entry['explosions'] : [];
@@ -156,7 +157,7 @@ final class FireworkShow extends PluginBase{
 				}
 			}
 
-			$pos = new FireworkPosition($worldName, new Vector3($x, $y, $z), $enabled, $nightOnly, $spawnTick, $explosions);
+			$pos = new FireworkPosition($worldName, new Vector3($x, $y, $z), $enabled, $nightOnly, $spawnTick, $flight, $explosions);
 			$this->positionsByWorld[$worldName][] = $pos;
 			$counter++;
 		}
@@ -225,6 +226,7 @@ final class FireworkShow extends PluginBase{
 					'enabled' => $p->enabled,
 					'nightOnly' => $p->nightOnly,
 					'spawnTick' => $p->spawnTick,
+					'flightTimeMultiplier' => $p->flightTimeMultiplier,
 					'explosions' => $expl,
 				];
 			}
@@ -260,7 +262,7 @@ final class FireworkShow extends PluginBase{
 				if($time < World::TIME_NIGHT || $time > World::TIME_SUNRISE) return;
 			}
 
-			$this->spawnFireworkOnWorld($worldObj, $pos->pos, $pos->explosions);
+			$this->spawnFireworkOnWorld($worldObj, $pos->pos, $pos->explosions, $pos->flightTimeMultiplier);
 		}), max(1, $pos->spawnTick));
 	}
 
@@ -293,12 +295,12 @@ final class FireworkShow extends PluginBase{
 		unset($this->worldLoaded[$worldName]);
 	}
 
-	public function spawnFireworkOnWorld(World $world, Vector3 $pos, array $explosions = []) : void{
+	public function spawnFireworkOnWorld(World $world, Vector3 $pos, array $explosions = [], int $flight = 1) : void{
 		$chunkX = $pos->getFloorX() >> 4;
 		$chunkZ = $pos->getFloorZ() >> 4;
 		if(!$world->isChunkLoaded($chunkX, $chunkZ)) return;
 
-		$randomDuration = (10 * 1) + mt_rand(0, 12);
+		$randomDuration = (($flight + 1) * 10) + mt_rand(0, 12);
 		$entity = new FireworkRocket(Location::fromObject($pos->add(0.5, 1, 0.5), $world, (float) (lcg_value() * 360), 90), $randomDuration, $explosions);
 		$entity->spawnToAll();
 	}

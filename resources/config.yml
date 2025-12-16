@@ -32,6 +32,7 @@ command:
 #     enabled: true
 #     nightOnly: false
 #     spawnTick: 40
+#     flightTimeMultiplier: 1
 #     explosions:
 #       - type: SMALL_BALL
 #         colors: [RED, BLUE]
@@ -52,6 +53,7 @@ positions:
     enabled: true
     nightOnly: false
     spawnTick: 40
+    flightTimeMultiplier: 1
     explosions:
       - type: SMALL_BALL
         colors: [RED, BLUE]

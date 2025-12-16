@@ -18,6 +18,7 @@ final class FireworkPosition{
 		public bool $enabled = true,
 		public bool $nightOnly = false,
 		public int $spawnTick = 40,
+		public int $flightTimeMultiplier = 1,
 		public array $explosions = []
 	){
 	}

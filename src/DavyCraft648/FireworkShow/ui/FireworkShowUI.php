@@ -62,13 +62,16 @@ final class FireworkShowUI{
 		$modal->textField("X", (string) $pos->getFloorX(), (string) $pos->getFloorX());
 		$modal->textField("Y", (string) $pos->getFloorY(), (string) $pos->getFloorY());
 		$modal->textField("Z", (string) $pos->getFloorZ(), (string) $pos->getFloorZ());
+		$modal->toggle("Night Only", default: false);
+		$modal->textField("Spawn Tick", "40", "40", "20 ticks = ~1 second");
+		$modal->textField("Flight Time Multiplier (1-127)", "1", "1", "random duration in ticks = ((multiplier + 1) * 10) + random(0..12)");
 		$modal->show($player)->then(function(Player $p, ModalFormResponse $data) : void{
 			if($data->canceled){
 				$this->openMainForm($p);
 				return;
 			}
-			[$world, $x, $y, $z] = $data->formValues;
-			$pos = new FireworkPosition($world, new Vector3((int) $x, (int) $y, (int) $z));
+			[$world, $x, $y, $z, $nightOnly, $spawnTick, $flightRaw] = $data->formValues;
+			$pos = new FireworkPosition($world, new Vector3((int) $x, (int) $y, (int) $z), enabled: true, nightOnly: (bool) $nightOnly, spawnTick: (int) $spawnTick, flightTimeMultiplier: max(1, min(127, (int) $flightRaw)));
 			$this->plugin->addPosition($pos);
 			$this->plugin->savePositionsToConfig();
 			$p->sendMessage("Added position to $world");
@@ -85,6 +88,7 @@ final class FireworkShowUI{
 		$form->button("Edit explosions");
 		$form->button($pos->enabled ? "Disable" : "Enable");
 		$form->button("Delete position");
+		$form->divider();
 		$form->button("Back");
 
 		$form->show($player)->then(function(Player $p, ActionFormResponse $res) use ($world, $index) : void{
@@ -128,12 +132,13 @@ final class FireworkShowUI{
 		$modal->textField("Z", (string) $pos->pos->getFloorZ(), (string) $pos->pos->getFloorZ());
 		$modal->toggle("Night Only", default: $pos->nightOnly);
 		$modal->textField("Spawn Tick", (string) $pos->spawnTick, (string) $pos->spawnTick, "20 ticks = ~1 second");
+		$modal->textField("Flight Time Multiplier (1-127)", (string) $pos->flightTimeMultiplier, (string) $pos->flightTimeMultiplier, "random duration in ticks = ((multiplier + 1) * 10) + random(0..12)");
 		$modal->show($player)->then(function(Player $p, ModalFormResponse $data) use ($world, $index) : void{
 			if($data->canceled){
 				$this->openEditForm($p, $world, $index);
 				return;
 			}
-			[$newWorld, $x, $y, $z, $nightOnly, $spawnTick] = $data->formValues;
+			[$newWorld, $x, $y, $z, $nightOnly, $spawnTick, $flightRaw] = $data->formValues;
 			$pos = $this->plugin->getPositionsByWorld()[$world][$index] ?? null;
 			if($pos === null) return;
 
@@ -141,6 +146,7 @@ final class FireworkShowUI{
 			$pos->pos = new Vector3((int) $x, (int) $y, (int) $z);
 			$pos->nightOnly = (bool) $nightOnly;
 			$pos->spawnTick = (int) $spawnTick;
+			$pos->flightTimeMultiplier = max(1, min(127, (int) $flightRaw));
 
 			if($newWorld !== $oldWorld){
 				$this->plugin->removePosition($oldWorld, $index);
@@ -256,6 +262,16 @@ final class FireworkShowUI{
 			[$typeRaw, $colorsRaw, $fadeRaw, $twinkle, $trail] = $data->formValues;
 			$pos = $this->plugin->getPositionsByWorld()[$world][$index] ?? null;
 			if($pos === null) return;
+
+			if(trim((string) $typeRaw) === ''){
+				unset($pos->explosions[$explIndex]);
+				$pos->explosions = array_values($pos->explosions);
+				$this->plugin->savePositionsToConfig();
+				$p->sendMessage("Removed explosion #$explIndex");
+				$this->openExplosionsForm($p, $world, $index);
+				return;
+			}
+
 			$type = $this->resolveType($typeRaw);
 			if($type === null){
 				$p->sendMessage("Invalid firework type: $typeRaw");
