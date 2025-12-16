@@ -196,7 +196,8 @@ final class FireworkShowUI{
 
 	private function openAddExplosionForm(Player $player, string $world, int $index) : void{
 		$modal = ModalFormData::create()->title("Add Explosion");
-		$modal->textField("Shape", "small_ball", tooltip: "The shape of the explosion. Can be small_ball, large_ball, star, creeper, or burst");
+		$types = array_map(function(FireworkRocketType $c){ return $c->name; }, FireworkRocketType::cases());
+		$modal->dropdown("Shape", $types, 0, tooltip: "The shape of the explosion. Can be " . implode(', ', $types));
 		$modal->textField("Colors (comma separated, e.g. red,blue)", "light_blue", tooltip: "The colors of the initial particles of the explosion, randomly selected from");
 		$modal->textField("Fade (comma separated)", tooltip: "The colors of the fading particles of the explosion, randomly selected from");
 		$modal->toggle("Twinkle", default: false, tooltip: "Whether or not the explosion has a twinkle effect (glowstone dust)");
@@ -209,7 +210,12 @@ final class FireworkShowUI{
 			[$typeRaw, $colorsRaw, $fadeRaw, $twinkle, $trail] = $data->formValues;
 			$pos = $this->plugin->getPositionsByWorld()[$world][$index] ?? null;
 			if($pos === null) return;
-			$type = $this->resolveType($typeRaw);
+			$type = null;
+			if(is_int($typeRaw) || (is_string($typeRaw) && ctype_digit($typeRaw))){
+				$idx = (int) $typeRaw;
+				$cases = FireworkRocketType::cases();
+				$type = $cases[$idx] ?? null;
+			}
 			if($type === null){
 				$p->sendMessage("Invalid firework type: $typeRaw");
 				return;
@@ -249,7 +255,11 @@ final class FireworkShowUI{
 		foreach($expl->getFadeColors() as $c) $fade[] = $c->name;
 
 		$modal = ModalFormData::create()->title("Edit Explosion #$explIndex");
-		$modal->textField("Shape", $expl->getType()->name, $expl->getType()->name, "The shape of the explosion. Can be small_ball, large_ball, star, creeper, or burst");
+		$types = array_map(function(FireworkRocketType $c){ return $c->name; }, FireworkRocketType::cases());
+		array_unshift($types, "<remove>");
+		$defaultIndex = array_search($expl->getType()->name, $types, true);
+		if($defaultIndex === false) $defaultIndex = 1;
+		$modal->dropdown("Shape", $types, $defaultIndex, tooltip: "The shape of the explosion. Can be " . implode(', ', array_slice($types, 1)));
 		$modal->textField("Colors (comma separated)", implode(',', $cols), implode(',', $cols), "The colors of the initial particles of the explosion, randomly selected from");
 		$modal->textField("Fade (comma separated)", implode(',', $fade), implode(',', $fade), "The colors of the fading particles of the explosion, randomly selected from");
 		$modal->toggle("Twinkle", default: $expl->willTwinkle(), tooltip: "Whether or not the explosion has a twinkle effect (glowstone dust)");
@@ -263,16 +273,19 @@ final class FireworkShowUI{
 			$pos = $this->plugin->getPositionsByWorld()[$world][$index] ?? null;
 			if($pos === null) return;
 
-			if(trim((string) $typeRaw) === ''){
-				unset($pos->explosions[$explIndex]);
-				$pos->explosions = array_values($pos->explosions);
-				$this->plugin->savePositionsToConfig();
-				$p->sendMessage("Removed explosion #$explIndex");
-				$this->openExplosionsForm($p, $world, $index);
-				return;
+			if(is_int($typeRaw) || (is_string($typeRaw) && ctype_digit($typeRaw))){
+				$idx = (int) $typeRaw;
+				if($idx === 0){
+					unset($pos->explosions[$explIndex]);
+					$pos->explosions = array_values($pos->explosions);
+					$this->plugin->savePositionsToConfig();
+					$p->sendMessage("Removed explosion #$explIndex");
+					$this->openExplosionsForm($p, $world, $index);
+					return;
+				}
+				$cases = FireworkRocketType::cases();
+				$type = $cases[$idx - 1] ?? null;
 			}
-
-			$type = $this->resolveType($typeRaw);
 			if($type === null){
 				$p->sendMessage("Invalid firework type: $typeRaw");
 				return;
