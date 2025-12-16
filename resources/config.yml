@@ -11,7 +11,7 @@ configVersion: 1
 command:
   name: fireworkshow
   description: "Manage firework shows"
-  usage: "/fireworkshow"
+  usage: "/fireworkshow list|add|remove|toggle"
   aliases: [fwshow, fws]
 
 # Positions list - each entry can override worldName, nightOnly, enabled, spawnTick

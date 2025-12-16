@@ -3,25 +3,28 @@ declare(strict_types=1);
 
 namespace DavyCraft648\FireworkShow;
 
+use DavyCraft648\FireworkShow\command\FireworkShowCommand;
+use DavyCraft648\FireworkShow\ui\FireworkShowUI;
+use DavyCraft648\PMServerUI\PMServerUI;
 use pocketmine\block\utils\DyeColor;
-use pocketmine\command\ClosureCommand;
-use pocketmine\command\Command;
-use pocketmine\command\CommandSender;
-use pocketmine\data\bedrock\FireworkRocketTypeIdMap;
 use pocketmine\data\bedrock\DyeColorIdMap;
+use pocketmine\data\bedrock\FireworkRocketTypeIdMap;
 use pocketmine\entity\Location;
 use pocketmine\entity\object\FireworkRocket;
 use pocketmine\event\EventPriority;
+use pocketmine\event\world\WorldLoadEvent;
+use pocketmine\event\world\WorldUnloadEvent;
 use pocketmine\item\FireworkRocketExplosion;
 use pocketmine\item\FireworkRocketType;
 use pocketmine\math\Vector3;
 use pocketmine\plugin\PluginBase;
+use pocketmine\scheduler\ClosureTask;
 use pocketmine\Server;
 use pocketmine\world\World;
-use pocketmine\event\world\WorldLoadEvent;
-use pocketmine\event\world\WorldUnloadEvent;
-use pocketmine\scheduler\ClosureTask;
 use function array_keys;
+use function array_map;
+use function array_splice;
+use function array_values;
 use function is_array;
 use function is_int;
 use function is_numeric;
@@ -49,20 +52,10 @@ final class FireworkShow extends PluginBase{
 		$commandDescription = (string) ($commandCfg["description"] ?? "Manage firework shows");
 		$commandUsage = (string) ($commandCfg["usage"] ?? ("/" . $commandName));
 		$commandAliases = is_array($commandCfg["aliases"] ?? null) ? array_map('strval', array_values($commandCfg["aliases"])) : [];
-		$this->getServer()->getCommandMap()->register(
-			$this->getName(),
-			new ClosureCommand(
-				$commandName,
-				function(CommandSender $sender, Command $command, string $commandLabel, array $args) : mixed{
-					//Todo: Implement command functionality
-					return null;
-				},
-				["fireworkshow.command.fireworkshow"],
-				$commandDescription,
-				$commandUsage,
-				$commandAliases
-			)
-		);
+
+		PMServerUI::register($this);
+		$ui = new FireworkShowUI($this);
+		$this->getServer()->getCommandMap()->register($this->getName(), new FireworkShowCommand($this, $ui, $commandName, $commandDescription, $commandUsage, $commandAliases));
 
 		$this->getServer()->getPluginManager()->registerEvent(WorldLoadEvent::class, fn(WorldLoadEvent $event) => $this->onWorldLoaded($event->getWorld()), EventPriority::NORMAL, $this);
 		$this->getServer()->getPluginManager()->registerEvent(WorldUnloadEvent::class, fn(WorldUnloadEvent $event) => $this->onWorldUnloaded($event->getWorld()), EventPriority::NORMAL, $this);
@@ -76,7 +69,7 @@ final class FireworkShow extends PluginBase{
 		}
 	}
 
-	private function loadConfigPositions() : void{
+	public function loadConfigPositions() : void{
 		$config = $this->getConfig();
 		$entries = $config->get("positions", []);
 		if(!is_array($entries)) return;
@@ -170,6 +163,107 @@ final class FireworkShow extends PluginBase{
 		$this->getLogger()->debug("Loaded $counter firework positions from config.");
 	}
 
+	/** @return array<string, FireworkPosition[]> */
+	public function getPositionsByWorld() : array{
+		return $this->positionsByWorld;
+	}
+
+	public function addPosition(FireworkPosition $pos) : void{
+		$this->positionsByWorld[$pos->worldName][] = $pos;
+		if($pos->enabled){
+			$this->schedulePositionHandler($pos->worldName, $pos);
+		}
+	}
+
+	public function removePosition(string $worldName, int $index) : bool{
+		if(!isset($this->positionsByWorld[$worldName][$index])) return false;
+		$pos = $this->positionsByWorld[$worldName][$index];
+		if($pos->handler !== null){
+			$pos->handler->cancel();
+			$pos->handler = null;
+		}
+		array_splice($this->positionsByWorld[$worldName], $index, 1);
+		if($this->positionsByWorld[$worldName] === []) unset($this->positionsByWorld[$worldName]);
+		return true;
+	}
+
+	public function togglePosition(string $worldName, int $index) : bool{
+		if(!isset($this->positionsByWorld[$worldName][$index])) return false;
+		$pos = $this->positionsByWorld[$worldName][$index];
+		$pos->enabled = !$pos->enabled;
+		if($pos->enabled){
+			if(isset($this->worldLoaded[$worldName])){
+				if($pos->handler === null){
+					$worldObj = Server::getInstance()->getWorldManager()->getWorld($this->worldLoaded[$worldName]);
+					if($worldObj instanceof World){
+						$this->schedulePositionHandler($worldName, $pos);
+					}
+				}
+			}
+		}else{
+			if($pos->handler !== null){
+				$pos->handler->cancel();
+				$pos->handler = null;
+			}
+		}
+		return true;
+	}
+
+	public function positionsToConfigArray() : array{
+		$out = [];
+		foreach($this->positionsByWorld as $world => $list){
+			foreach($list as $p){
+				$expl = [];
+				foreach($p->explosions as $e){
+					$expl[] = $this->serializeExplosion($e);
+				}
+				$out[] = [
+					'worldName' => $world,
+					'x' => $p->pos->getFloorX(),
+					'y' => $p->pos->getFloorY(),
+					'z' => $p->pos->getFloorZ(),
+					'enabled' => $p->enabled,
+					'nightOnly' => $p->nightOnly,
+					'spawnTick' => $p->spawnTick,
+					'explosions' => $expl,
+				];
+			}
+		}
+		return $out;
+	}
+
+	private function serializeExplosion(FireworkRocketExplosion $e) : array{
+		$cols = [];
+		foreach($e->getColors() as $c) $cols[] = $c->name;
+		$fade = [];
+		foreach($e->getFadeColors() as $c) $fade[] = $c->name;
+		return ['type' => $e->getType()->name, 'colors' => $cols, 'fade' => $fade, 'twinkle' => $e->willTwinkle(), 'trail' => $e->getTrail()];
+	}
+
+	public function savePositionsToConfig() : void{
+		$this->getConfig()->set('positions', $this->positionsToConfigArray());
+		$this->getConfig()->save();
+	}
+
+	private function schedulePositionHandler(string $worldName, FireworkPosition $pos) : void{
+		if($pos->handler !== null) return;
+		$pos->handler = $this->getScheduler()->scheduleRepeatingTask(new ClosureTask(function() use ($worldName, $pos) : void{
+			$server = Server::getInstance();
+			$worldObj = $server->getWorldManager()->getWorld($this->worldLoaded[$worldName] ?? -1);
+			if(!$worldObj instanceof World || !$worldObj->isLoaded()){
+				$this->getLogger()->debug("World $worldName is not loaded, this task should have been canceled.");
+				return;
+			}
+
+			if($pos->nightOnly){
+				$time = $worldObj->getTime();
+				if($time < World::TIME_NIGHT || $time > World::TIME_SUNRISE) return;
+			}
+
+			$this->spawnFireworkOnWorld($worldObj, $pos->pos, $pos->explosions);
+		}), max(1, $pos->spawnTick));
+	}
+
 	public function onWorldLoaded(World $world) : void{
 		$worldName = $world->getFolderName();
 		if(!isset($this->positionsByWorld[$worldName])) return;
@@ -181,18 +275,7 @@ final class FireworkShow extends PluginBase{
 		foreach($this->positionsByWorld[$worldName] as $pos){
 			if(!$pos->enabled) continue;
 
-			$pos->handler = $this->getScheduler()->scheduleRepeatingTask(new ClosureTask(function() use ($worldName, $pos) : void{
-				$server = Server::getInstance();
-				$worldObj = $server->getWorldManager()->getWorld($this->worldLoaded[$worldName]);
-				if(!$worldObj instanceof World) return;
-
-				if($pos->nightOnly){
-					$time = $worldObj->getTime();
-					if($time < World::TIME_NIGHT || $time > World::TIME_SUNRISE) return;
-				}
-
-				$this->spawnFireworkOnWorld($worldObj, $pos->pos, $pos->explosions);
-			}), max(1, $pos->spawnTick));
+			$this->schedulePositionHandler($worldName, $pos);
 		}
 	}
 
