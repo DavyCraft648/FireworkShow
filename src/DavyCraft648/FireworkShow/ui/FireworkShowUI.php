@@ -5,26 +5,30 @@ namespace DavyCraft648\FireworkShow\ui;
 
 use DavyCraft648\FireworkShow\FireworkPosition;
 use DavyCraft648\FireworkShow\FireworkShow;
+use DavyCraft648\FireworkShow\Utils;
 use DavyCraft648\PMServerUI\ActionFormData;
 use DavyCraft648\PMServerUI\ActionFormResponse;
 use DavyCraft648\PMServerUI\ModalFormData;
 use DavyCraft648\PMServerUI\ModalFormResponse;
-use pocketmine\block\utils\DyeColor;
 use pocketmine\item\FireworkRocketExplosion;
 use pocketmine\item\FireworkRocketType;
 use pocketmine\math\Vector3;
 use pocketmine\player\Player;
 use function array_map;
+use function array_search;
+use function array_slice;
+use function array_unshift;
+use function array_values;
 use function count;
-use function explode;
 use function implode;
-use function str_replace;
-use function strtolower;
-use function trim;
+use function is_int;
+use function is_string;
+use function max;
+use function min;
 
-final class FireworkShowUI{
+final readonly class FireworkShowUI{
 
-	public function __construct(private readonly FireworkShow $plugin){ }
+	public function __construct(private FireworkShow $plugin){ }
 
 	public function openMainForm(Player $player) : void{
 		$positions = $this->plugin->getPositionsByWorld();
@@ -220,22 +224,12 @@ final class FireworkShowUI{
 				$p->sendMessage("Invalid firework type: $typeRaw");
 				return;
 			}
-			$colors = [];
-			foreach(array_map('trim', explode(',', $colorsRaw)) as $c){
-				if($c === '') continue;
-				$col = $this->resolveDyeColor($c);
-				if($col !== null) $colors[] = $col;
-			}
+			$colors = Utils::parseDyeColorList((string) $colorsRaw);
 			if($colors === []){
 				$p->sendMessage("At least one valid color required");
 				return;
 			}
-			$fade = [];
-			foreach(array_map('trim', explode(',', $fadeRaw)) as $f){
-				if($f === '') continue;
-				$col = $this->resolveDyeColor($f);
-				if($col !== null) $fade[] = $col;
-			}
+			$fade = Utils::parseDyeColorList((string) $fadeRaw);
 			$expl = new FireworkRocketExplosion($type, $colors, $fade, (bool) $twinkle, (bool) $trail);
 			$pos->explosions[] = $expl;
 			$this->plugin->savePositionsToConfig();
@@ -273,6 +267,7 @@ final class FireworkShowUI{
 			$pos = $this->plugin->getPositionsByWorld()[$world][$index] ?? null;
 			if($pos === null) return;
 
+			$type = null;
 			if(is_int($typeRaw) || (is_string($typeRaw) && ctype_digit($typeRaw))){
 				$idx = (int) $typeRaw;
 				if($idx === 0){
@@ -290,44 +285,17 @@ final class FireworkShowUI{
 				$p->sendMessage("Invalid firework type: $typeRaw");
 				return;
 			}
-			$colors = [];
-			foreach(array_map('trim', explode(',', $colorsRaw)) as $c){
-				if($c === '') continue;
-				$col = $this->resolveDyeColor($c);
-				if($col !== null) $colors[] = $col;
-			}
+			$colors = Utils::parseDyeColorList((string) $colorsRaw);
 			if($colors === []){
 				$p->sendMessage("At least one valid color required");
 				return;
 			}
-			$fade = [];
-			foreach(array_map('trim', explode(',', $fadeRaw)) as $f){
-				if($f === '') continue;
-				$col = $this->resolveDyeColor($f);
-				if($col !== null) $fade[] = $col;
-			}
+			$fade = Utils::parseDyeColorList((string) $fadeRaw);
 			$expl = new FireworkRocketExplosion($type, $colors, $fade, (bool) $twinkle, (bool) $trail);
 			$pos->explosions[$explIndex] = $expl;
 			$this->plugin->savePositionsToConfig();
 			$p->sendMessage("Updated explosion #$explIndex");
 			$this->openExplosionsForm($p, $world, $index);
 		});
-	}
-
-	private function resolveType(string $raw) : ?FireworkRocketType{
-		$needle = strtolower(trim($raw));
-		foreach(FireworkRocketType::cases() as $case){
-			if(strtolower($case->name) === $needle) return $case;
-		}
-		return null;
-	}
-
-	private function resolveDyeColor(string $raw) : ?DyeColor{
-		$needle = strtolower(trim($raw));
-		foreach(DyeColor::cases() as $case){
-			if(strtolower($case->name) === $needle) return $case;
-			if(strtolower(str_replace([' ', '-', '_'], '', $case->name)) === str_replace([' ', '-', '_'], '', $needle)) return $case;
-		}
-		return null;
 	}
 }
