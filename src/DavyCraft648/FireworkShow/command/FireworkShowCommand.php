@@ -10,9 +10,11 @@ use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
 use pocketmine\math\Vector3;
 use pocketmine\player\Player;
+use pocketmine\plugin\Plugin;
+use pocketmine\plugin\PluginOwned;
 use function strtolower;
 
-final class FireworkShowCommand extends Command{
+final class FireworkShowCommand extends Command implements PluginOwned{
 
 	public function __construct(
 		private readonly FireworkShow $plugin,
@@ -91,5 +93,9 @@ final class FireworkShowCommand extends Command{
 			default:
 				return false;
 		}
+	}
+
+	public function getOwningPlugin() : Plugin{
+		return $this->plugin;
 	}
 }
